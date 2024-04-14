@@ -69,7 +69,6 @@ function handlePresetButtonClick(event) {
   const preset = event.target.getAttribute("data-preset");
   console.log("Preset:", preset);
 
-  // Update start date
   const startDate = new Date(startDateInput.value);
 
   switch (preset) {
