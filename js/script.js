@@ -46,14 +46,18 @@ function displayResultsList() {
   });
 }
 
-// Update the results list when the page loads
-window.addEventListener("load", displayResultsList);
+displayResultsList();
 
 // Event functions tab 1
 startDateInput.addEventListener("input", () => {
   const startDateValue = new Date(startDateInput.value);
   endDateInput.removeAttribute("disabled");
   console.log(startDateValue);
+});
+
+startDateInput.addEventListener("input", () => {
+  const startDateValue = startDateInput.value;
+  endDateInput.min = startDateValue;
 });
 
 endDateInput.addEventListener("input", () => {
@@ -73,10 +77,10 @@ function handlePresetButtonClick(event) {
   const startDate = new Date(startDateInput.value);
 
   switch (preset) {
-    case "Тиждень":
+    case "week":
       endDateInput.value = addWeek(startDate);
       break;
-    case "Місяць":
+    case "month":
       endDateInput.value = addMonth(startDate);
       break;
     default:
@@ -153,26 +157,18 @@ function calculateTimeInterval() {
       result = "Invalid time unit";
   }
 
-  // Function to check weekend or weekday
-  function isWeekendOrWeekday(date, option) {
+  function isWeekend(date) {
     const dayOfWeek = date.getDay();
-    if (option === "weekdays") {
-      return dayOfWeek >= 1 && dayOfWeek <= 5;
-    } else if (option === "weekends") {
-      return dayOfWeek === 0 || dayOfWeek === 6;
-    } else {
-      return true;
-    }
+    return dayOfWeek === 0 || dayOfWeek === 6;
   }
 
-  // Function to count weekends between two dates
-  function countWeekends(startDate, endDate, option) {
+ function countWeekends(startDate, endDate) {
     let currentDate = new Date(startDate);
     let finishDate = new Date(endDate);
     let count = 0;
 
     while (currentDate < finishDate) {
-      if (isWeekendOrWeekday(currentDate, option)) {
+      if (isWeekend(currentDate)) {
         count++;
       }
       currentDate.setDate(currentDate.getDate() + 1);
@@ -181,14 +177,13 @@ function calculateTimeInterval() {
     return count;
   }
 
-  // Function to count weekdays between two dates
-  function countWeekdays(startDate, endDate, option) {
+  function countWeekdays(startDate, endDate) {
     let currentDate = new Date(startDate);
     let finishDate = new Date(endDate);
     let count = 0;
 
     while (currentDate < finishDate) {
-      if (isWeekendOrWeekday(currentDate, option)) {
+      if (!isWeekend(currentDate)) {
         count++;
       }
       currentDate.setDate(currentDate.getDate() + 1);
