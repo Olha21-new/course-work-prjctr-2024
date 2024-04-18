@@ -1,7 +1,21 @@
 "use strict";
 
-import { initializeTabs } from './tabs.js';
-initializeTabs();
+const tabs = document.querySelectorAll("[data-tab-target]");
+const tabContents = document.querySelectorAll("[data-tab-content]");
+
+tabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const target = document.querySelector(tab.dataset.tabTarget);
+    tabContents.forEach((tabContent) => {
+      tabContent.classList.remove("active");
+    });
+    tabs.forEach((tab) => {
+      tab.classList.remove("active");
+    });
+    target.classList.add("active");
+    tab.classList.add("active");
+  });
+});
 
 // DOM variables tab 1
 const startDateInput = document.getElementById("startDate");
@@ -202,4 +216,181 @@ function storeResult(resultObject) {
   let results = JSON.parse(localStorage.getItem("results")) || [];
   results.push(resultObject);
   localStorage.setItem("results", JSON.stringify(results));
+}
+
+// Tab 2
+const API_KEY = "LZKVil0EfTJ5PAV5PXOsUaMQDSJt137T";
+const API_URL = "https://calendarific.com/api/v2";
+
+// Function to display error message
+function displayError(errorMessage) {
+  const errorBlock = document.createElement("div");
+  errorBlock.classList.add("error-block");
+  errorBlock.textContent = errorMessage;
+
+  // Error message
+  const errorContainer = document.getElementById("errorContainer");
+  errorContainer.appendChild(errorBlock);
+}
+
+async function getCountries() {
+  try {
+    const response = await fetch(`${API_URL}/countries?api_key=${API_KEY}`);
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    const {
+      response: { countries },
+    } = await response.json();
+    return countries;
+  } catch (error) {
+    console.error("Error fetching countries:", error);
+    displayError("Error fetching countries. Please try again later.");
+  }
+}
+
+async function getHolidays(country, year) {
+  try {
+    const response = await fetch(
+      `${API_URL}/holidays?&api_key=${API_KEY}&country=${country}&year=${year}`
+    );
+    if (!response.ok) {
+      throw new Error(`Error: ${response.status}`);
+    }
+    const {
+      response: { holidays },
+    } = await response.json();
+    return holidays;
+  } catch (error) {
+    console.error("Error fetching holidays:", error);
+    displayError("Error fetching holidays. Please try again later.");
+  }
+}
+
+async function populateCountries() {
+  const selectCountry = document.getElementById("selectCountry");
+  try {
+    const countries = await getCountries();
+
+    countries.forEach((country) => {
+      const option = document.createElement("option");
+      option.value = country["iso-3166"];
+      option.text = country.country_name;
+      selectCountry.appendChild(option);
+    });
+
+    populateYears();
+  } catch (error) {
+    console.error("Error fetching countries:", error);
+    displayError("Error fetching countries. Please try again later.");
+  }
+}
+
+populateCountries();
+
+function populateYears() {
+  const selectYear = document.getElementById("selectYear");
+  const currentYear = new Date().getFullYear();
+  for (let year = 2001; year <= 2049; year++) {
+    const option = document.createElement("option");
+    option.text = year;
+    option.value = year;
+    selectYear.add(option);
+  }
+  selectYear.value = currentYear;
+}
+
+populateYears();
+
+document.getElementById("selectYear").disabled = true;
+
+// Event listener for country dropdown change
+document
+  .getElementById("selectCountry")
+  .addEventListener("change", function () {
+    const selectYear = document.getElementById("selectYear");
+    selectYear.disabled = false;
+  });
+
+// Event listener for button click
+document
+  .querySelector(".holidays__button")
+  .addEventListener("click", async () => {
+    const selectCountry = document.getElementById("selectCountry");
+    const selectYear = document.getElementById("selectYear");
+    const country = selectCountry.value;
+    const year = selectYear.value;
+
+    if (country && year) {
+      try {
+        const holidays = await getHolidays(country, year);
+        displayHolidaysList(holidays);
+      } catch (error) {
+        console.error("Error fetching holidays:", error);
+        displayError("Error fetching holidays. Please try again later.");
+      }
+    } else {
+      console.error("Please select both country and year");
+      displayError("Please select both country and year.");
+    }
+  });
+
+// Function to display holidays
+function displayHolidaysList(holidays) {
+  const resultList = document.querySelector(".result-history--holidays");
+
+  resultList.innerHTML = "";
+
+  if (holidays && holidays.length > 0) {
+    holidays.forEach((holiday) => {
+      const listItem = document.createElement("li");
+      listItem.classList.add("result-history--holidays-list");
+
+      const dateSpan = document.createElement("span");
+      dateSpan.textContent = holiday.date.iso;
+      listItem.appendChild(dateSpan);
+
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = holiday.name;
+      listItem.appendChild(nameSpan);
+
+      resultList.appendChild(listItem);
+    });
+
+    console.log("List items added:", resultList.innerHTML);
+  } else {
+    const noResultsMessage = document.createElement("li");
+    noResultsMessage.textContent =
+      "No holidays found for the selected country and year.";
+    resultList.appendChild(noResultsMessage);
+
+    console.error("No holidays found for the selected country and year.");
+  }
+}
+
+document.getElementById("sortByNameButton").addEventListener("click", () => {
+  sortHolidaysByName();
+});
+let sortByNameAsc = true;
+
+// Function to sort holidays
+function sortHolidaysByName() {
+  const resultList = document.querySelector(".result-history--holidays");
+  const holidayItems = Array.from(resultList.children);
+  const holidayNames = holidayItems.map((item) => item.children[1].textContent);
+
+  const sortedHolidayNames = sortByNameAsc
+    ? holidayNames.sort()
+    : holidayNames.sort().reverse();
+
+  sortByNameAsc = !sortByNameAsc;
+
+  resultList.innerHTML = "";
+
+  sortedHolidayNames.forEach((holidayName) => {
+    const listItem = holidayItems.find(
+      (item) => item.children[1].textContent === holidayName
+    );
+    resultList.appendChild(listItem);
+  });
 }
