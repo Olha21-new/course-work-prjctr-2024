@@ -1,5 +1,5 @@
 <!DOCTYPE html>
- <html lang="en">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,6 +10,13 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Lato:wght@400;900&display=swap"
     />
+    <!--link rel="icon" type="image/png" href="/assets/favicon.png" sizes="16x16"-->
+    <link rel="icon" type="image/png" href="/favicon.png" sizes="16x16">
+  
+    <script src="./js/index.js " type="module"></script>
+
+  
+  
   </head>
 
   <body>
@@ -38,10 +45,10 @@
              <input type="date"  id="endDate" disabled/>
            </div>
             <div class="time-span">
-              <button class="button" data-preset="Тиждень">
+              <button class="button" data-preset="week">
                 Week
               </button>
-              <button class="button" data-preset="Місяць">
+              <button class="button" data-preset="month">
                 Month
               </button>
             </div>
@@ -81,36 +88,38 @@
            <div class="input-date__wrapper">
             <div class="input-date">
              <label>Вибір країни</label>
-              <select name="selectCountry" ><
-               <option value="all">Всі дні</option>
-               <option value="weekdays">Будні дні</option>
-               <option value="weekends">Вихідні дні</option>
+              <select name="selectCountry" id="selectCountry" >
+               <option value="Country">Select</option>
               </select>
               </div>
 
               <div class="input-date">
                <label>Вибір року</label>
-               <select name="selectYear" >
-                <option value="days">Порахувати кількість днів</option>
-                <option value="hours">Порахувати кількість годин</option>
-                <option value="minutes">Порахувати кількість хвилин</option>
-                <option value="seconds">Порахувати кількість секунд</option>
+               <select name="selectYear" id="selectYear" >
+                <option value="Year">Select</option>
                </select>
              </div>
-             <div class="count__button-wrapper">
-              <button class="count__button">Показати</button>
+             <div class="holidays__button-wrapper">
+              <button class="holidays__button">Показати</button>
             </div>  
            </div>
            <!--Results block-->
           <div class="results">
-            <h2>Результати</h2>
-            <ul class="result-history">
-              <li class="result-history__list">Тут буде результат</li>             
+            <div class="result-title">
+              <h2>Результати</h2>
+               <div><button id="sortByDateButton"> Посортувати </button></div>
+              
+            </div>
+            <ul class="result-history--holidays">   
+            
+            <div class="result-title">
+              <h3>Дата</h3><h3>Назва свята</h3>
+            </div>
+                    
           </div>
           </div>
         </div>
       </div>
     </main>
-    <script src="./js/script.js" defer></script>
   </body>
 </html>
