@@ -1,6 +1,6 @@
 "use strict";
 
-import { initializeTabs } from './tabs.js';
+import { initializeTabs } from "./tabs.js";
 initializeTabs();
 
 // DOM variables tab 1
@@ -12,25 +12,7 @@ const resultsList = document.querySelector(".result-history");
 const daySelect = document.getElementById("selectDays");
 const timeUnitSelect = document.getElementById("selectUnits");
 
-// Function to retrieve the last 10 results from local storage
-function getLastTenResults() {
-  const results = JSON.parse(localStorage.getItem("results")) || [];
-  return results.slice(-10); // Retrieve the last 10 results
-}
-
-// Function to display the last 10 results in a list format
-function displayResultsList() {
-  const results = getLastTenResults();
-  const resultList = document.getElementById("resultsTable");
-  resultList.innerHTML = ""; // Clear existing list items
-
-  results.forEach((result) => {
-    const listItem = document.createElement("li");
-    listItem.textContent = `${result.startDate} - ${result.endDate}: ${result.result}`;
-    resultList.appendChild(listItem);
-  });
-}
-
+import { displayResultsList } from "./resultsModule.js";
 displayResultsList();
 
 // Event functions tab 1
@@ -58,7 +40,6 @@ function handlePresetButtonClick(event) {
   const preset = event.target.getAttribute("data-preset");
   console.log("Preset:", preset);
 
-  // Update start date
   const startDate = new Date(startDateInput.value);
 
   switch (preset) {
@@ -73,14 +54,12 @@ function handlePresetButtonClick(event) {
   }
 }
 
-// Function to add a week
 function addWeek(newStartDate) {
   const endDate = new Date(newStartDate);
   endDate.setDate(endDate.getDate() + 7);
   return endDate.toISOString().split("T")[0];
 }
 
-// Function to add a month
 function addMonth(newStartDate) {
   const endDate = new Date(newStartDate);
   endDate.setMonth(endDate.getMonth() + 1);
@@ -147,7 +126,7 @@ function calculateTimeInterval() {
     return dayOfWeek === 0 || dayOfWeek === 6;
   }
 
- function countWeekends(startDate, endDate) {
+  function countWeekends(startDate, endDate) {
     let currentDate = new Date(startDate);
     let finishDate = new Date(endDate);
     let count = 0;
@@ -177,14 +156,12 @@ function calculateTimeInterval() {
     return count;
   }
 
-  // Display positive values in resuts
   const positiveResult = Math.abs(result);
 
   const li = document.createElement("li");
   li.textContent = `${startDateInput.value} - ${endDateInput.value}: ${positiveResult} ${timeUnit}`;
   resultsList.append(li);
 
-  // Store the result in local storage
   const resultObject = {
     startDate: startDateInput.value,
     endDate: endDateInput.value,
@@ -194,12 +171,146 @@ function calculateTimeInterval() {
   storeResult(resultObject);
 }
 
-// EventListener to count
 countButton.addEventListener("click", calculateTimeInterval);
 
-// Function to store the result in local storage
 function storeResult(resultObject) {
   let results = JSON.parse(localStorage.getItem("results")) || [];
   results.push(resultObject);
   localStorage.setItem("results", JSON.stringify(results));
 }
+
+// Tab 2
+import { getCountries, getHolidays } from "./apiModule.js";
+
+const displayError = (errorMessage) => {
+  const errorBlock = document.createElement("div");
+  errorBlock.classList.add("error-block");
+  errorBlock.textContent = errorMessage;
+
+  const errorContainer = document.getElementById("errorContainer");
+  errorContainer.appendChild(errorBlock);
+};
+
+const displayHolidaysList = (holidays, sortOrder = "asc") => {
+  const resultList = document.querySelector(".result-history--holidays");
+  resultList.innerHTML = "";
+
+  // Sort holidays based on date
+  if (sortOrder === "asc") {
+    holidays.sort((a, b) => new Date(a.date.iso) - new Date(b.date.iso));
+  } else {
+    holidays.sort((a, b) => new Date(b.date.iso) - new Date(a.date.iso));
+  }
+
+  if (holidays && holidays.length > 0) {
+    holidays.forEach((holiday) => {
+      const listItem = document.createElement("li");
+      listItem.classList.add("result-history--holidays-list");
+
+      const dateSpan = document.createElement("span");
+      dateSpan.textContent = holiday.date.iso;
+      listItem.appendChild(dateSpan);
+
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = holiday.name;
+      listItem.appendChild(nameSpan);
+
+      resultList.appendChild(listItem);
+    });
+  } else {
+    const noResultsMessage = document.createElement("li");
+    noResultsMessage.textContent =
+      "No holidays found for the selected country and year.";
+    resultList.appendChild(noResultsMessage);
+    console.error("No holidays found for the selected country and year.");
+  }
+};
+
+const populateCountries = async () => {
+  const selectCountry = document.getElementById("selectCountry");
+  try {
+    const countries = await getCountries();
+    countries.forEach((country) => {
+      const option = document.createElement("option");
+      option.value = country["iso-3166"];
+      option.text = country.country_name;
+      selectCountry.appendChild(option);
+    });
+    populateYears();
+  } catch (error) {
+    console.error("Error fetching countries:", error);
+    displayError("Error fetching countries. Please try again later.");
+  }
+};
+
+const populateYears = () => {
+  const selectYear = document.getElementById("selectYear");
+  const currentYear = new Date().getFullYear();
+  for (let year = 2001; year <= 2049; year++) {
+    const option = document.createElement("option");
+    option.text = year;
+    option.value = year;
+    selectYear.add(option);
+  }
+  selectYear.value = currentYear;
+  selectYear.disabled = true;
+};
+
+populateCountries();
+document
+  .getElementById("selectCountry")
+  .addEventListener("change", function () {
+    const selectYear = document.getElementById("selectYear");
+    selectYear.disabled = false;
+  });
+
+document
+  .querySelector(".holidays__button")
+  .addEventListener("click", async () => {
+    const selectCountry = document.getElementById("selectCountry");
+    const selectYear = document.getElementById("selectYear");
+    const country = selectCountry.value;
+    const year = selectYear.value;
+
+    if (country && year) {
+      try {
+        const holidays = await getHolidays(country, year);
+        displayHolidaysList(holidays);
+      } catch (error) {
+        console.error("Error fetching holidays:", error);
+        displayError("Error fetching holidays. Please try again later.");
+      }
+    } else {
+      console.error("Please select both country and year");
+      displayError("Please select both country and year.");
+    }
+  });
+
+let sortOrder = "asc";
+
+document
+  .getElementById("sortByDateButton")
+  .addEventListener("click", async () => {
+    const selectCountry = document.getElementById("selectCountry");
+    const selectYear = document.getElementById("selectYear");
+    const country = selectCountry.value;
+    const year = selectYear.value;
+
+    if (country && year) {
+      try {
+        const holidays = await getHolidays(country, year);
+
+        // Toggle sort order
+        sortOrder = sortOrder === "asc" ? "desc" : "asc";
+
+        // Sort holidays based on the current sort order
+        displayHolidaysList(holidays, sortOrder);
+      } catch (error) {
+        console.error("Error fetching holidays:", error);
+        displayError("Error fetching holidays. Please try again later.");
+      }
+    } else {
+      console.error("Please select both country and year");
+      displayError("Please select both country and year.");
+    }
+  });
